@@ -1,0 +1,77 @@
+---
+Standard: c++20
+BasedOnStyle: WebKit
+ColumnLimit: 100
+PointerBindsToType: false
+
+BreakBeforeBinaryOperators: NonAssignment
+
+PointerAlignment: Right
+AllowShortEnumsOnASingleLine: true
+IndentPPDirectives: AfterHash
+PPIndentWidth: 2
+
+CommentPragmas: "^ SPDX-License-Identifier:|^ Copyright|\\since|\\overload|\\reentrant|\\value|\\li|\\l"
+
+ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH, forever, Q_FOREVER, QBENCHMARK, QBENCHMARK_ONCE ]
+
+SpaceAfterTemplateKeyword: true
+
+BreakConstructorInitializers: BeforeColon
+
+FixNamespaceComments: true
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+ConstructorInitializerIndentWidth: 4
+
+SpaceBeforeCpp11BracedList: false
+
+ContinuationIndentWidth: 4
+
+NamespaceIndentation: None
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: true
+    AfterControlStatement: false
+    AfterEnum: false
+    AfterFunction: true
+    AfterNamespace: false
+    AfterObjCDeclaration: false
+    AfterStruct: true
+    AfterUnion: false
+    BeforeCatch: false
+    BeforeElse: false
+    IndentBraces: false
+    SplitEmptyRecord: true
+
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+SortIncludes: true
+IncludeBlocks: Preserve
+
+PackConstructorInitializers: BinPack
+
+AlignEscapedNewlines: DontAlign
+
+PenaltyBreakAssignment: 1000
+
+AlwaysBreakAfterReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 1000
+
+AlignAfterOpenBracket: BlockIndent
+
+AlwaysBreakTemplateDeclarations: Yes
+
+BinPackParameters: true
+BinPackArguments: true
+PenaltyBreakOpenParenthesis: 100
+AllowAllArgumentsOnNextLine: false
+
+ShortNamespaceLines: 10
+
+---
+Language: Proto
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 100

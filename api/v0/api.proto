@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package api.v0;
+
+// #### Messages ####
+
+message None {}
+
+message ClientRequest {}
+
+enum Event {
+  FeatureNone                    = 0;
+  FeatureLatency                 = 1;
+  FeatureTail                    = 2;
+  FeatureRender                  = 3;
+  FeatureThreadPool              = 4;
+  FeatureState                   = 5;
+  FeatureStateContext            = 6;
+  FeaturePresetLoad              = 7;
+  FeatureTrackInfo               = 8;
+  FeatureAudioPorts              = 9;
+  FeatureAudioPortsConfig        = 10;
+  FeatureAudioPortsActivation    = 11;
+  FeatureParameter               = 12;
+  FeatureParameterIndication     = 13;
+  FeatureRemoteControls          = 14;
+  FeatureNotePorts               = 15;
+  FeatureNoteName                = 16;
+  FeatureTimerSupport            = 17;
+  FeatureGui                     = 18;
+  FeatureContextMenu             = 19;
+  FeatureVoiceInf                = 20;
+
+  PluginActivate                 = 22;
+  PluginDeactivate               = 23;
+  PluginStartProcessing          = 24;
+  PluginStopProcessing           = 25;
+  PluginReset                    = 44;
+
+
+  GuiCreate                      = 26;
+  GuiDestroy                     = 27;
+  GuiShow                        = 28;
+  GuiHide                        = 29;
+  GuiSetTransient                = 30;
+
+  ParamValue                     = 31;
+  ParamModulation                = 32;
+  ParamGestureBegin              = 33;
+  ParamGestureEnd                = 34;
+  ParamInfo                      = 35;
+
+  NoteOn                         = 37;
+  NoteOff                        = 38;
+  NoteChoke                      = 39;
+  NoteEnd                        = 40;
+
+  EventSuccess                   = 41;
+  EventFailed                    = 42;
+  EventInvalid                   = 43;
+}
+
+message ClapEventNote {
+  int32 note_id = 1;
+  int32 port_index = 2;
+  int32 channel = 3;
+  int32 key = 4;
+  double velocity = 5;
+}
+
+message ClapEventParam {
+  uint32 param_id = 1;
+  double value = 2;
+  double modulation = 3;
+}
+
+message ClapEventParamInfo {
+  uint32 param_id = 1;
+  string name = 2;
+  string module = 3;
+  double min_value = 4;
+  double max_value = 5;
+  double default_value = 6;
+}
+
+message ClapEventMainSync {
+  int64 window_id = 1;
+}
+
+message TimestampMsg {
+  int64 seconds = 1;
+  int64 nanos = 2;
+}
+
+// #### RPCs ####
+
+service ClapInterface {
+  rpc ServerEventStream(ClientRequest) returns (stream ServerEvents) {}
+
+  rpc ClientEventCall(ClientEvent) returns (None) {}
+  rpc ClientParamCall(ClientParams) returns (None) {}
+}
+
+// Clients -> Plugin, Main
+message ClientEvent {
+  Event event = 1;
+}
+
+// Plugin -> Clients
+message ServerEvent {
+  Event event = 1;
+  oneof payload {
+    ClapEventNote note = 2;
+    ClapEventParam param = 3;
+    ClapEventParamInfo param_info = 4;
+    ClapEventMainSync main_sync = 5;
+  }
+}
+
+message ServerEvents {
+  repeated ServerEvent events = 1;
+}
+
+// Clients -> Plugin, Audio
+message ClientParam {
+  Event event = 1;
+  ClapEventParam param = 2;
+  TimestampMsg timestamp = 4;
+}
+
+message ClientParams {
+  repeated ClientParam params = 1;
+}

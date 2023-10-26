@@ -1,0 +1,7 @@
+**build*
+**cmake-build*
+**/build*
+CMakeUserPresets.json
+compile_commands.json
+**/.cache
+**/.idea
