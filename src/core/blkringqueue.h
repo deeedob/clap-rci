@@ -1,22 +1,24 @@
-#ifndef EVT_RING_QUEUE_H
-#define EVT_RING_QUEUE_H
+#ifndef BLKRINGQUEUE_H
+#define BLKRINGQUEUE_H
 
 #include "global.h"
-#include "semaphores.h"
 
+#include <semaphore>
 #include <utility>
 #include <memory>
 #include <chrono>
+
+#include <atomic>
 
 RCLAP_BEGIN_NAMESPACE
 
 // A blocking and fast single-reader single-writer queue.
 template <typename T>
-class BlkQueue
+class BlkRingQueue
 {
 public:
-    BlkQueue() : slots(std::make_unique<SlimSemaphore>(0)), items(std::make_unique<SlimSemaphore>(0)) {}
-    explicit BlkQueue(std::size_t cap) : capacity(cap), slots(std::make_unique<SlimSemaphore>(cap)), items(std::make_unique<SlimSemaphore>(0))
+    BlkRingQueue() : slots(std::counting_semaphore<>::max()), items(0) {}
+    explicit BlkRingQueue(std::size_t cap) : capacity(cap), slots(cap), items(0)
     {
         // Fast modulo mask hack. Only works for power-of-2 capacities.
         // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
@@ -30,87 +32,79 @@ public:
         data = new T[cap]();
     }
 
-    ~BlkQueue() {
-        for (std::size_t i = 0, n = items->availableApprox(); i != n; ++i) {
+    ~BlkRingQueue() {
+        for (std::size_t i = 0, n = size(); i != n; ++i) {
             std::size_t idx = (nextItem + i) & mask;
             data[idx].~T();
         }
     }
 
-    BlkQueue(BlkQueue &&other) noexcept : BlkQueue() {
+    BlkRingQueue(BlkRingQueue &&other) noexcept : BlkRingQueue() {
         swap(other);
     }
 
-    BlkQueue &operator=(BlkQueue &&other) noexcept {
+    BlkRingQueue &operator=(BlkRingQueue &&other) noexcept {
         swap(other);
         return *this;
     }
 
-    BlkQueue(const BlkQueue &) = delete;
-    BlkQueue &operator=(const BlkQueue &) = delete;
+    BlkRingQueue(const BlkRingQueue &) = delete;
+    BlkRingQueue &operator=(const BlkRingQueue &) = delete;
 
-    void swap(BlkQueue &other) noexcept
+    void swap(BlkRingQueue &other) noexcept
     {
         std::swap(data, other.data);
         std::swap(capacity, other.capacity);
         std::swap(mask, other.mask);
-        std::swap(slots, other.slots);
-        std::swap(items, other.items);
+//        std::swap(slots, other.slots); TODO: MinGW doesn't like this?
+//        std::swap(items, other.items);
         std::swap(nextSlot, other.nextSlot);
         std::swap(nextItem, other.nextItem);
     }
 
     bool tryEnqueue(T &&item) {
-        if (!slots->tryWait())
+        if (!slots.try_acquire())
             return false;
         enqueueImpl(std::move(item));
         return true;
     }
 
     bool tryEnqueue(const T &item) {
-        if (!slots->tryWait())
+        if (!slots.try_acquire())
             return false;
         enqueueImpl(item);
         return true;
     }
 
     void waitEnqueue(T &&item) {
-        while (!slots->wait());
+        slots.acquire();
         enqueueImpl(std::move(item));
     }
 
     void waitEnqueue(const T &item) {
-        while (!slots->wait());
+        slots.acquire();
         enqueueImpl(item);
     }
 
-    bool waitEnqueueTimed(const T &&item, std::int64_t usecs) {
-        if (!slots->wait(usecs))
+    template <typename Rep, typename Period>
+    inline bool waitEnqueueTimed(T &&item, const std::chrono::duration<Rep, Period> &timeout) {
+        if (!slots.try_acquire_for(timeout))
             return false;
         enqueueImpl(std::move(item));
         return true;
     }
 
-    bool waitEnqueueTimed(const T &item, std::int64_t usecs) {
-        if (!slots->wait(usecs))
+    template <typename Rep, typename Period>
+    inline bool waitEnqueueTimed(const T &item, const std::chrono::duration<Rep, Period> &timeout) {
+        if (!slots.try_acquire_for(timeout))
             return false;
         enqueueImpl(item);
         return true;
     }
 
-    template <typename Rep, typename Period>
-    inline bool waitEnqueueTimed(T &&item, const std::chrono::duration<Rep, Period> &timeout) {
-        return waitEnqueueTimed(std::move(item), std::chrono::duration_cast<std::chrono::microseconds>(timeout).count());
-    }
-
-    template <typename Rep, typename Period>
-    inline bool waitEnqueueTimed(const T &item, const std::chrono::duration<Rep, Period> &timeout) {
-        return waitEnqueueTimed(item, std::chrono::duration_cast<std::chrono::microseconds>(timeout).count());
-    }
-
     template <typename U>
     bool tryDequeue(U &item) {
-        if (!items->tryWait())
+        if (!items.try_acquire())
             return false;
         dequeueImpl(item);
         return true;
@@ -118,38 +112,34 @@ public:
 
     template <typename U>
     void waitDequeue(U &item) {
-        while (!items->wait());
+        items.acquire();
         dequeueImpl(item);
     }
 
-    template <typename U>
-    bool waitDequeueTimed(U &item, std::int64_t usecs) {
-        if (!items->wait(usecs))
+    template <typename U, typename Rep, typename Period>
+    inline bool waitDequeueTimed(U &item, const std::chrono::duration<Rep, Period> &timeout) {
+        if (!items.try_acquire_for(timeout))
             return false;
         dequeueImpl(item);
         return true;
     }
 
-    template <typename U, typename Rep, typename Period>
-    inline bool waitDequeueTimed(U &item, const std::chrono::duration<Rep, Period> &timeout) {
-        return waitDequeueTimed(item, std::chrono::duration_cast<std::chrono::microseconds>(timeout).count());
-    }
-
     inline T *peek() {
-        if (!items->availableApprox())
+       if (!size())
             return nullptr;
         return peekImpl();
     }
 
     inline bool tryPop() {
-        if (!items->tryWait())
+        if (!items.try_acquire())
             return false;
         popImpl();
+        slots.release();
         return true;
     }
 
-    [[nodiscard]] inline std::size_t sizeApprox() const {
-        return items->availableApprox();
+    [[nodiscard]] inline std::size_t size() const {
+        return itemCount.load();
     }
 
     [[nodiscard]] inline std::size_t maxCapacity() const {
@@ -160,7 +150,8 @@ private:
     template <typename U>
     void enqueueImpl(U &&item) {
         new (&data[nextSlotIdx()]) T(std::forward<U>(item));
-        items->signal();
+        itemCount.fetch_add(1);
+        items.release();
     }
 
     template <typename U>
@@ -168,7 +159,8 @@ private:
         T &elem = data[nextItemIdx()];
         item = std::move(elem);
         elem.~T();
-        slots->signal();
+        itemCount.fetch_sub(1);
+        slots.release();
     }
 
     T *peekImpl() const {
@@ -177,7 +169,6 @@ private:
 
     void popImpl() {
         data[nextItemIdx()].~T();
-        slots->signal();
     }
 
     inline auto itemIdx() const {
@@ -196,8 +187,11 @@ private:
     T *data = nullptr;
     std::size_t capacity = {};
 
-    std::unique_ptr<SlimSemaphore> slots;
-    std::unique_ptr<SlimSemaphore> items;
+    std::counting_semaphore<> slots;
+    std::counting_semaphore<> items;
+
+    std::atomic<std::size_t> itemCount = 0;
+    static_assert(std::atomic<std::size_t>::is_always_lock_free);
 
     std::size_t mask = {}; // capacity mask for cheap modulo
 

@@ -2,9 +2,8 @@
 #define SHARED_H
 #include <core/logging.h>
 #include <core/global.h>
-#include <core/blkqueue.h>
-#include <core/reducequeue.h>
 #include <core/timestamp.h>
+#include <core/blkringqueue.h>
 #include "wrappers.h"
 
 #include <farbot/fifo.hpp>
@@ -153,7 +152,7 @@ private:
     MPMRQueue<ServerEventWrapper> mPluginMainToClientsQueue;
 
     // Clients -> Plugin (Blocking)
-    BlkQueue<Event> mBlockingClientEventQueue { 1 };
+    BlkRingQueue<Event> mBlockingClientEventQueue { 1 };
     std::mutex mBlockingClientEventQueueMtx;
 
     // Clients -> Plugin

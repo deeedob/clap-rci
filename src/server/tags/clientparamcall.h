@@ -3,6 +3,7 @@
 
 #include "eventtag.h"
 #include <core/global.h>
+#include <optional>
 
 RCLAP_BEGIN_NAMESPACE
 
@@ -28,7 +29,7 @@ private:
     grpc::Status handleEvent();
 
 private:
-    grpc::ServerCompletionQueue *cq = nullptr;
+    [[maybe_unused]] grpc::ServerCompletionQueue *cq = nullptr;
     grpc::ServerContext ctx;
 
     grpc::ServerAsyncResponseWriter<None> writer;

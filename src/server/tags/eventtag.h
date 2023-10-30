@@ -1,8 +1,8 @@
 #ifndef EVENTTAG_H
 #define EVENTTAG_H
 
-#include <api/api.pb.h>
-#include <api/api.grpc.pb.h>
+#include <api.pb.h>
+#include <api.grpc.pb.h>
 using namespace api::v0;
 
 #include <core/global.h>

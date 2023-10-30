@@ -39,10 +39,11 @@ void ClientParamCall::kill()
 
 GrpcMetadata ClientParamCall::metadata() const noexcept { return ctx.client_metadata(); }
 
+// TODO: remove in favor of servereventstream.
 std::optional<std::string> ClientParamCall::extractMetadata(const std::string_view &cmp) const noexcept
 {
     for (const auto &[key, value] : std::as_const(metadata())) {
-        if (strcmp(key.data(), cmp.data()) == 0)
+        if (std::string(key.data(), key.size()) == cmp)
             return std::string(value.data(), value.length());
     }
     return std::nullopt;

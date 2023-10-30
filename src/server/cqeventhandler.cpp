@@ -51,13 +51,14 @@ bool CqEventHandler::enqueueFn(EventTag::FnType &&f, std::uint64_t deferNs /*= 0
             cq.get(), gpr_now(gpr_clock_type::GPR_CLOCK_REALTIME), toTag(eventFn.first->first.get())
         );
     } else { // Otherwise, defer the function for deferNs nanoseconds. Note that this is using a syscall
-        grpc::TimePoint tp = std::chrono::system_clock::now() + std::chrono::nanoseconds (deferNs);
-        eventFn.first->second.Set(cq.get(), tp.raw_time(), toTag(eventFn.first->first.get()));
+        const auto tp = gpr_time_from_nanos(deferNs, GPR_TIMESPAN);
+        eventFn.first->second.Set(cq.get(), tp, toTag(eventFn.first->first.get()));
     }
 
     return true;
 }
-
+// TODO: This is not optimal, find a better way to organize and sync with shareddata...
+// See also servereventstream::kill
 bool CqEventHandler::destroyTag(std::uint64_t hash)
 {
     if (pendingTags.erase(hash) != 0) { // We have removed something
@@ -141,6 +142,7 @@ bool CqEventHandler::create<ClientEventCallHandler>()
             return false;
         }
     } catch (const std::exception &e) {
+        SPDLOG_CRITICAL("{}", e.what());
         return false;
     }
     return true;
@@ -158,6 +160,7 @@ bool CqEventHandler::create<ClientParamCall>()
             return false;
         }
     } catch (const std::exception &e) {
+        SPDLOG_CRITICAL("{}", e.what());
         return false;
     }
     return true;
@@ -175,6 +178,7 @@ bool CqEventHandler::create<ServerEventStream>()
             return false;
         }
     } catch (const std::exception &e) {
+        SPDLOG_CRITICAL("{}", e.what());
         return false;
     }
     return true;

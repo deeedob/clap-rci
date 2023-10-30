@@ -5,14 +5,8 @@
 #include "serverctrl.h"
 
 #include <chrono>
-#include <netdb.h>
 #include <optional>
 #include <string>
-
-#ifdef __linux__
-#include <unistd.h>
-#include <cstdint>
-#endif
 
 RCLAP_BEGIN_NAMESPACE
 

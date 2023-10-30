@@ -2,10 +2,11 @@
 #define WRAPPERS_H
 
 #include <core/global.h>
-
-#include <api/api.pb.h>
-#include <api/api.grpc.pb.h>
+#include <api.pb.h>
+#include <api.grpc.pb.h>
 using namespace api::v0;
+
+#include <variant>
 
 RCLAP_BEGIN_NAMESPACE
 

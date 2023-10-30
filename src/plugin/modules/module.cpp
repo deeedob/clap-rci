@@ -1,6 +1,5 @@
 #include "module.h"
 #include "../coreplugin.h"
-#include <cstring>
 
 RCLAP_BEGIN_NAMESPACE
 
@@ -21,8 +20,10 @@ Parameter *Module::addParameter(uint32_t id,  const std::string &name, uint32_t 
         .max_value = valueType->maxValue(),
         .default_value = valueType->defaultValue(),
     };
-    std::strncpy(info.name, name.c_str(), sizeof(info.name));
-    std::strncpy(info.module, m_name.c_str(), sizeof(info.module));
+    if (name.size() > sizeof(info.name) || m_name.size() > sizeof(info.module))
+        throw std::invalid_argument("Name or module name too long!");
+    safe_str_copy(info.name, sizeof(info.name), name.c_str());
+    safe_str_copy(info.module, sizeof(info.module), m_name.c_str());
     return m_plugin.addParameter(info, std::move(valueType));
 }
 

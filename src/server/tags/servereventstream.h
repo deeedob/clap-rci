@@ -4,6 +4,7 @@
 #include "eventtag.h"
 #include <core/global.h>
 #include <grpcpp/alarm.h>
+#include <optional>
 
 RCLAP_BEGIN_NAMESPACE
 
@@ -35,7 +36,7 @@ private:
     std::optional<std::string> extractMetadata(const std::string_view &cmp) const noexcept
     {
         for (const auto &[key, value] : std::as_const(metadata())) {
-            if (strcmp(key.data(), cmp.data()) == 0)
+            if (std::string(key.data(), key.size()) == cmp)
                 return std::string(value.data(), value.length());
         }
         return std::nullopt;

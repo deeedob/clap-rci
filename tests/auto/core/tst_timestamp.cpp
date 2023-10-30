@@ -58,7 +58,7 @@ TEST_CASE("Timestamp" "[Core]") {
     }
 
     SECTION("Ticks") {
-        std::uint64_t ticks = Timestamp::getTicks();
+        std::uint64_t ticks = Timestamp::getFastTicks();
         REQUIRE(ticks > 0);
     }
 

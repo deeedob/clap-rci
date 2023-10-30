@@ -11,6 +11,10 @@ ServerEventStream::ServerEventStream(CqEventHandler *parent, grpc::ServerComplet
     : EventTag(parent), cq(cq), stream(&ctx), idHash(toHash(this))
 {
     SPDLOG_TRACE("ServerEventStream created {}", toTag(this));
+    ctx.AsyncNotifyWhenDone(toTag(new EventTag(parent, [&](bool ok) {
+        SPDLOG_INFO("Disconnecting ServerEventStream {}", toTag(this));
+        kill();
+    })));
     service->RequestServerEventStream(&ctx, &request, &stream, cq, cq, this);
 }
 
@@ -98,9 +102,9 @@ bool ServerEventStream::endStream()
 
 void ServerEventStream::kill()
 {
-    parent->destroyTag(hash());
     if (sharedData)
         sharedData->removeStream(this);
+    parent->destroyTag(hash());
 }
 
 bool ServerEventStream::connectClient()

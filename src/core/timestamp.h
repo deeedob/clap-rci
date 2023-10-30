@@ -9,6 +9,10 @@
 #include <string>
 #include <string_view>
 
+#ifdef _MSC_VER
+#include <intrin.h> // For __rdtsc
+#endif
+
 RCLAP_BEGIN_NAMESPACE
 
 struct Stamp
@@ -103,18 +107,18 @@ public:
         default: return { "Unknown type" };
         }
     }
-
     // Check if compiler supports this
     static inline std::uint64_t getFastTicks()
     {
-#if defined(__x86_64__) || defined(_M_X64)
-        unsigned int lo;
-        unsigned int hi;
-        __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi)); // NOLINT
-        return static_cast<std::uint64_t>(hi) << 32 | lo;   // NOLINT
+#if defined(_MSC_VER)
+        return __rdtsc();
+#elif defined(__GNUC__) || defined(__clang__) // For GCC and Clang
+        unsigned int lo, hi;
+        __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
+        return static_cast<std::uint64_t>(hi) << 32 | lo;
 #else
-#error  "Not supported"
-        return 0;
+#error "Compiler not supported"
+            return 0;
 #endif
     }
 

@@ -382,7 +382,7 @@ bool CorePlugin::paramsValueToText(clap_id paramId, double value, char *display,
         return false;
 
     const auto text = param->valueType()->toText(value);
-    std::strncpy(display, text.c_str(), size);
+    safe_str_copy(display, size, text.c_str());
     return true;
 }
 
@@ -404,7 +404,9 @@ void CorePlugin::paramsFlush(const clap_input_events *in, const clap_output_even
 Parameter *CorePlugin::addParameter(const clap_param_info &info, std::unique_ptr<ValueType> valueType)
 {
     assert(dPtr);
-    auto copy = std::make_unique<Parameter>(info, std::move(valueType), dPtr->params.size());
+    auto copy = std::make_unique<Parameter>(
+        info, std::move(valueType), static_cast<uint32_t>(dPtr->params.size())
+    );
     auto *ptr = copy.get();
     // Add a pointer to the map to find it by paramId for fast lookup. The host can provide this in the cookie.
     auto ret = dPtr->paramsHashed.insert_or_assign(info.id, ptr);
@@ -481,12 +483,12 @@ bool CorePlugin::guiCreate(const char *api, bool isFloating) noexcept
 
     // Send the hash as argument to identify the plugin to this instance.
     const auto shash = std::to_string(dPtr->hashCore);
-    if (!dPtr->guiProc->setArgs({ *addr, shash })) { // Prepare to launch the GUI
+    if (!dPtr->guiProc->setArguments({ *addr, shash })) { // Prepare to launch the GUI
         SPDLOG_ERROR("Failed to set args for executable");
         return false;
     }
 
-    if (!dPtr->guiProc->execute()) {  // Start the GUI
+    if (!dPtr->guiProc->startChild()) {  // Start the GUI
         SPDLOG_ERROR("Failed to execute GUI");
         return false;
     }
@@ -495,13 +497,14 @@ bool CorePlugin::guiCreate(const char *api, bool isFloating) noexcept
     std::this_thread::sleep_for(std::chrono::milliseconds(500)); // FIXME, sync issue with the server when restarting quickly
     // Wait for the polling queue to be ready. And send a verification event.
     crill::progressive_backoff_wait([&]{
-        // SPDLOG_TRACE("Waiting for polling queue to be ready");
+        // TODO: Bail out after x time or process closed
+//        SPDLOG_TRACE("Waiting for polling queue to be ready");
         return dPtr->sharedData->isPolling();
     });
     pushToMainQueueBlocking({Event::GuiCreate, ClapEventMainSyncWrapper{}});
     if (!dPtr->sharedData->blockingVerifyEvent(Event::GuiCreate)) {
         SPDLOG_WARN("GUI has failed to verify in time. Killing Gui process.");
-        if (!dPtr->guiProc->killChild())
+        if (!dPtr->guiProc->terminateChild())
             SPDLOG_CRITICAL("GUI proc failed to killChild");
         return false;
     }
@@ -547,7 +550,7 @@ bool CorePlugin::guiShow() noexcept
     SPDLOG_TRACE("GuiShow");
     assert(dPtr->sharedData->isPolling());
 
-    pushToMainQueueBlocking({Event::GuiShow, ClapEventMainSyncWrapper{}});
+   pushToMainQueueBlocking({Event::GuiShow, ClapEventMainSyncWrapper{}});
     if (!dPtr->sharedData->blockingVerifyEvent(Event::GuiShow)) {
         SPDLOG_ERROR("GuiShow failed to get verification from client");
         return false;
@@ -620,7 +623,7 @@ void CorePlugin::logInfo()
         "Log file:         {}\n"
         "Executable:       {}\n"
         "##################################################################\n";
-    const auto stime = std::format("{}", std::chrono::system_clock::now());
+    const auto stime = fmt::format("{}", std::chrono::system_clock::now());
     SPDLOG_INFO(PluginInfoMsg,
         stime,
         _host.host()->name, _host.host()->version,
