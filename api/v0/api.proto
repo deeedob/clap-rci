@@ -9,34 +9,11 @@ message None {}
 message ClientRequest {}
 
 enum Event {
-  FeatureNone                    = 0;
-  FeatureLatency                 = 1;
-  FeatureTail                    = 2;
-  FeatureRender                  = 3;
-  FeatureThreadPool              = 4;
-  FeatureState                   = 5;
-  FeatureStateContext            = 6;
-  FeaturePresetLoad              = 7;
-  FeatureTrackInfo               = 8;
-  FeatureAudioPorts              = 9;
-  FeatureAudioPortsConfig        = 10;
-  FeatureAudioPortsActivation    = 11;
-  FeatureParameter               = 12;
-  FeatureParameterIndication     = 13;
-  FeatureRemoteControls          = 14;
-  FeatureNotePorts               = 15;
-  FeatureNoteName                = 16;
-  FeatureTimerSupport            = 17;
-  FeatureGui                     = 18;
-  FeatureContextMenu             = 19;
-  FeatureVoiceInf                = 20;
-
-  PluginActivate                 = 22;
+  PluginActivate                 = 0;
   PluginDeactivate               = 23;
   PluginStartProcessing          = 24;
   PluginStopProcessing           = 25;
   PluginReset                    = 44;
-
 
   GuiCreate                      = 26;
   GuiDestroy                     = 27;
@@ -44,34 +21,69 @@ enum Event {
   GuiHide                        = 29;
   GuiSetTransient                = 30;
 
-  ParamValue                     = 31;
-  ParamModulation                = 32;
-  ParamGestureBegin              = 33;
-  ParamGestureEnd                = 34;
+  Param                          = 31;
   ParamInfo                      = 35;
-
-  NoteOn                         = 37;
-  NoteOff                        = 38;
-  NoteChoke                      = 39;
-  NoteEnd                        = 40;
+  Note                           = 37;
 
   EventSuccess                   = 41;
   EventFailed                    = 42;
   EventInvalid                   = 43;
 }
 
+// TODO: Host and Plugin Extensions
+
+message ClapEventGui {
+  enum Type {
+    Create = 0;
+    Destroy = 1;
+    Show = 2;
+    Hide = 3;
+    // If plugin window is floating
+    Transient = 4;
+    SuggestTitle = 5;
+    // Else, TODO: implement
+  }
+  int64 window_id = 1;
+}
+
 message ClapEventNote {
+  enum Type {
+    NoteOn = 0;
+    NoteOff = 1;
+    NoteChoke = 2;
+    NoteEnd = 3;
+    NoteExpression = 4;
+  }
+  enum ExpressionType {
+    Volume = 0;
+    Pan = 1;
+    Tuning = 2;
+    Vibrato = 3;
+    Expression = 4;
+    Brightness = 5;
+    Pressure = 6;
+    None = -1;
+  }
   int32 note_id = 1;
   int32 port_index = 2;
   int32 channel = 3;
   int32 key = 4;
-  double velocity = 5;
+  double value = 5;
+  Type type = 6;
+  ExpressionType expression = 7; // TODO: Maybe oneof? Or should we split this into a separate message?
 }
 
 message ClapEventParam {
-  uint32 param_id = 1;
-  double value = 2;
-  double modulation = 3;
+  enum Type {
+    Value = 0;
+    Modulation = 1;
+    GestureBegin = 2;
+    GestureEnd = 3;
+  }
+  Type type = 1;
+  uint32 param_id = 2;
+  double value = 3;
+  double modulation = 4;
 }
 
 message ClapEventParamInfo {
@@ -96,7 +108,6 @@ message TimestampMsg {
 
 service ClapInterface {
   rpc ServerEventStream(ClientRequest) returns (stream ServerEvents) {}
-
   rpc ClientEventCall(ClientEvent) returns (None) {}
   rpc ClientParamCall(ClientParams) returns (None) {}
 }
@@ -125,7 +136,7 @@ message ServerEvents {
 message ClientParam {
   Event event = 1;
   ClapEventParam param = 2;
-  TimestampMsg timestamp = 4;
+  TimestampMsg timestamp = 3;
 }
 
 message ClientParams {

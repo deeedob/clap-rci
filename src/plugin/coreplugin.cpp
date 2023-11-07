@@ -73,7 +73,7 @@ CorePlugin::CorePlugin(const clap_plugin_descriptor *desc, const clap_host *host
 CorePlugin::CorePlugin(const Settings &settings, const clap_plugin_descriptor *desc, const clap_host *host, std::unique_ptr<Module> rootModule)
     : Plugin(desc, host), dPtr(std::make_unique<CorePluginPrivate>(desc, std::move(rootModule)))
 {
-    // Consume the settings from the caller. Verify and extract the log file path.
+    // Consume the settings from the caller.
     dPtr->settings = std::make_unique<Settings>(settings);
 
     // Start global logger if not already started
@@ -157,7 +157,7 @@ void CorePlugin::processGuiEvents(const clap_output_events *ov)
     ClientParamWrapper clientEv;
     while (dPtr->sharedData->clientsToPluginQueue().pop(clientEv)) {
         switch (clientEv.ev) {
-            case ParamValue: {
+            case Param: {
                 auto *param = getParameterById(clientEv.paramId);
                 if (!param) {
                     SPDLOG_ERROR("Event process: parameter not found");
@@ -180,17 +180,9 @@ void CorePlugin::processGuiEvents(const clap_output_events *ov)
                if (!ov->try_push(ov, &ev.header)) [[unlikely]]
                   return;
             } break;
-            case ParamModulation:
-                break;
-            case ParamGestureBegin:
-                break;
-            case ParamGestureEnd:
-                break;
             case ParamInfo:
                 break;
-            case NoteOn:
-                break;
-            case NoteOff:
+            case Note:
                 break;
             default:
                 SPDLOG_ERROR("Unknown event");  // TODO: provide global converter between ev <> string
@@ -280,8 +272,7 @@ void CorePlugin::processEvent(const clap_event_header_t *evHdr) noexcept
             std::terminate();
         }
         param->setValue(evParam->value);
-        // Enqueue the event to the clients
-        pushToProcessQueue({ Event::ParamValue, ClapEventParamWrapper{ evParam->param_id, evParam->value, 0 } });
+        pushToProcessQueue({ Event::Param, ClapEventParamWrapper(evParam) });
     } break;
 
     case CLAP_EVENT_PARAM_MOD: {
@@ -301,35 +292,32 @@ void CorePlugin::processEvent(const clap_event_header_t *evHdr) noexcept
             std::terminate();
         }
         param->setModulation(evParam->amount);
-        pushToProcessQueue({ Event::ParamModulation, ClapEventParamWrapper{ evParam->param_id, 0, evParam->amount } });
+        pushToProcessQueue({ Event::Param, ClapEventParamWrapper(evParam) });
     } break;
 
     case CLAP_EVENT_NOTE_ON: {
         const auto *evNote = reinterpret_cast<const clap_event_note *>(evHdr);
-        pushToProcessQueue({ Event::NoteOn, ClapEventNoteWrapper {
-            evNote->note_id, evNote->port_index, evNote->channel, evNote->key, evNote->velocity
-        }});
+        pushToProcessQueue({ Event::Note, ClapEventNoteWrapper { evNote, CLAP_EVENT_NOTE_ON }});
     } break;
 
     case CLAP_EVENT_NOTE_OFF: {
         const auto *evNote = reinterpret_cast<const clap_event_note *>(evHdr);
-        pushToProcessQueue({ Event::NoteOff, ClapEventNoteWrapper {
-            evNote->note_id, evNote->port_index, evNote->channel, evNote->key, evNote->velocity
-        }});
+        pushToProcessQueue({ Event::Note, ClapEventNoteWrapper { evNote, CLAP_EVENT_NOTE_OFF }});
     } break;
 
     case CLAP_EVENT_NOTE_CHOKE: {
         const auto *evNote = reinterpret_cast<const clap_event_note *>(evHdr);
-        pushToProcessQueue({ Event::NoteChoke, ClapEventNoteWrapper {
-            evNote->note_id, evNote->port_index, evNote->channel, evNote->key, evNote->velocity
-        }});
+        pushToProcessQueue({ Event::Note, ClapEventNoteWrapper { evNote, CLAP_EVENT_NOTE_CHOKE }});
     } break;
 
     case CLAP_EVENT_NOTE_END: {
         const auto *evNote = reinterpret_cast<const clap_event_note *>(evHdr);
-        pushToProcessQueue({ Event::NoteEnd, ClapEventNoteWrapper {
-            evNote->note_id, evNote->port_index, evNote->channel, evNote->key, evNote->velocity
-        }});
+        pushToProcessQueue({ Event::Note, ClapEventNoteWrapper { evNote, CLAP_EVENT_NOTE_END }});
+    } break;
+
+    case CLAP_EVENT_NOTE_EXPRESSION: {
+        const auto *evNote = reinterpret_cast<const clap_event_note_expression *>(evHdr);
+        pushToProcessQueue({ Event::Note, ClapEventNoteWrapper { evNote, CLAP_EVENT_NOTE_EXPRESSION, evNote->expression_id }});
     } break;
 
     case CLAP_EVENT_MIDI: {
@@ -456,20 +444,16 @@ bool CorePlugin::guiCreate(const char *api, bool isFloating) noexcept
         SPDLOG_ERROR("Server is not running");
         return false;
     }
-    // Recheck the executable. It could be deleted in the meantime.
-    if (!dPtr->settings->executable()) {
-        SPDLOG_ERROR("executable not available");
-        return false;
-    }
 
     if (dPtr->guiProc) {
         SPDLOG_ERROR("Gui Proc must be null upon gui creation");
         return false;
     }
-
     dPtr->guiProc = std::make_unique<ProcessHandle>();
+
+    // Recheck the executable. It could be deleted in the meantime.
     if (!dPtr->settings->executable()) {
-        SPDLOG_ERROR("No executable available");
+        SPDLOG_ERROR("executable not available");
         return false;
     }
 
@@ -501,6 +485,7 @@ bool CorePlugin::guiCreate(const char *api, bool isFloating) noexcept
 //        SPDLOG_TRACE("Waiting for polling queue to be ready");
         return dPtr->sharedData->isPolling();
     });
+
     pushToMainQueueBlocking({Event::GuiCreate, ClapEventMainSyncWrapper{}});
     if (!dPtr->sharedData->blockingVerifyEvent(Event::GuiCreate)) {
         SPDLOG_WARN("GUI has failed to verify in time. Killing Gui process.");
@@ -574,7 +559,7 @@ bool CorePlugin::guiHide() noexcept
 void CorePlugin::guiDestroy() noexcept
 {
     SPDLOG_TRACE("GuiDestroy");
-    assert(dPtr->sharedData->isPolling());
+//    assert(dPtr->sharedData->isPolling());
     try {
         pushToMainQueueBlocking({Event::GuiDestroy, ClapEventMainSyncWrapper{}});
         if (!dPtr->sharedData->blockingVerifyEvent(Event::GuiDestroy))

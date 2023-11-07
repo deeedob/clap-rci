@@ -73,26 +73,8 @@ private:
 
     std::string evToString(const Event &ev)
     {
-        switch (ev) {
-            case Event::GuiCreate: return "GuiCreate";
-            case Event::GuiDestroy: return "GuiDestroy";
-            case Event::GuiSetTransient: return "GuiSetTransient";
-            case Event::GuiShow: return "GuiShow";
-            case Event::GuiHide: return "GuiHide";
-            case Event::PluginActivate: return "PluginActivate";
-            case Event::PluginDeactivate: return "PluginDeactivate";
-            case Event::PluginStartProcessing: return "PluginStartProcessing";
-            case Event::PluginStopProcessing: return "PluginStopProcessing";
-            case Event::ParamInfo: return "ParamInfo";
-            case Event::ParamValue: return "ParamValue";
-            case Event::ParamModulation: return "ParamModulation";
-            case Event::PluginReset: return "PluginReset";
-            case Event::NoteOn: return "NoteOn";
-            case Event::NoteOff: return "NoteOff";
-            case Event::NoteChoke: return "NoteChoke";
-            case Event::NoteEnd: return "NoteEnd";
-            default: return "Unknown/Unhandled Event";
-        }
+        // TODO: better position and implement
+        return {};
     }
     uint64_t consumeEventToStream(auto &queue) {
         ServerEventWrapper out;
@@ -111,8 +93,9 @@ private:
                     next->mutable_note()->set_port_index(arg.portIndex);
                     next->mutable_note()->set_channel(arg.channel);
                     next->mutable_note()->set_key(arg.key);
-                    next->mutable_note()->set_velocity(arg.velocity);
-                    SPDLOG_TRACE("Consumed note: {}", arg.key);
+                    next->mutable_note()->set_value(arg.value);
+                    next->mutable_note()->set_type(arg.getType());
+                    next->mutable_note()->set_expression(arg.getExpressionType());
                 } else if constexpr (std::is_same_v<T, ClapEventParamWrapper>) {
                     next->mutable_param()->set_param_id(arg.paramId);
                     next->mutable_param()->set_value(arg.value);
