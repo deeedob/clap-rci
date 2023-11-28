@@ -13,7 +13,8 @@ ServerEventStream::ServerEventStream(CqEventHandler *parent, grpc::ServerComplet
     SPDLOG_TRACE("ServerEventStream created {}", toTag(this));
     ctx.AsyncNotifyWhenDone(toTag(new EventTag(parent, [&](bool ok) {
         SPDLOG_INFO("Disconnecting ServerEventStream {}", toTag(this));
-        kill();
+        state = FINISH;
+        // kill();
     })));
     service->RequestServerEventStream(&ctx, &request, &stream, cq, cq, this);
 }

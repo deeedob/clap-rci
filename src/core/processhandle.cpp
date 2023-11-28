@@ -7,7 +7,7 @@ RCLAP_BEGIN_NAMESPACE
 struct ProcessHandlePrivate
 {
     ProcessHandlePrivate() = default;
-    explicit ProcessHandlePrivate(std::filesystem::path  path, const std::vector<std::string>& args = {});
+    explicit ProcessHandlePrivate(std::filesystem::path  path, std::initializer_list<std::string> args = {});
 
     bool isValid() const;
     bool isChildRunning() const;
@@ -30,7 +30,7 @@ struct ProcessHandlePrivate
 
 ProcessHandle::ProcessHandle() : dPtr(std::make_unique<ProcessHandlePrivate>()) {}
 
-ProcessHandle::ProcessHandle(const std::filesystem::path& path, const std::vector<std::string>& args)
+ProcessHandle::ProcessHandle(const std::filesystem::path& path, std::initializer_list<std::string> args)
     : dPtr(std::make_unique<ProcessHandlePrivate>(path, args)) {}
     
 ProcessHandle::~ProcessHandle()
@@ -147,7 +147,7 @@ std::optional<int> ProcessHandle::terminateChild()
 //
 // ############### PRIVATE IMPLEMENTATION ###############
 //
-ProcessHandlePrivate::ProcessHandlePrivate(std::filesystem::path path, const std::vector<std::string>& args)
+ProcessHandlePrivate::ProcessHandlePrivate(std::filesystem::path path, std::initializer_list<std::string> args)
     : mPath(std::move(path)), mArgs(args) {}
 
 bool ProcessHandlePrivate::isValid() const

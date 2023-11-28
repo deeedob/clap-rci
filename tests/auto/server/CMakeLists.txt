@@ -4,6 +4,6 @@
 include(CTest)
 include(Catch)
 
-add_test_executable(tst_server DEPENDENCIES clap-remote)
-add_test_executable(tst_serverctrl DEPENDENCIES clap-remote)
-add_test_executable(tst_cqeventhandler DEPENDENCIES clap-remote)
+add_test_executable(tst_server DEPENDENCIES clap-rci)
+add_test_executable(tst_serverctrl DEPENDENCIES clap-rci)
+add_test_executable(tst_cqeventhandler DEPENDENCIES clap-rci)

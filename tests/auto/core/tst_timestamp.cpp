@@ -8,7 +8,7 @@ void sleepMs(std::uint32_t t)
     std::this_thread::sleep_for(std::chrono::milliseconds(t));
 }
 
-using namespace QCLAP_NAMESPACE;
+using namespace RCLAP_NAMESPACE;
 
 TEST_CASE("Timestamp" "[Core]") {
 

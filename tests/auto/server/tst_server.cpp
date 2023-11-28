@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace QCLAP_NAMESPACE;
+using namespace RCLAP_NAMESPACE;
 
 TEST_CASE("Server Test") {
     SECTION("Start/Stop") {

@@ -2,6 +2,7 @@
 #define WRAPPERS_H
 
 #include <core/global.h>
+#include <core/timestamp.h>
 #include <api.pb.h>
 #include <api.grpc.pb.h>
 using namespace api::v0;
@@ -13,6 +14,7 @@ using namespace api::v0;
 RCLAP_BEGIN_NAMESPACE
 
 struct ClapEventNoteWrapper {
+    ClapEventNoteWrapper() = default;
     ClapEventNoteWrapper(const clap_event_note* note, uint32_t type)
        : noteId(note->note_id), portIndex(note->port_index), channel(note->channel),
          key(note->key), value(note->velocity), type(type)
@@ -43,6 +45,7 @@ struct ClapEventNoteWrapper {
 };
 
 struct ClapEventParamWrapper {
+    ClapEventParamWrapper() = default;
     ClapEventParamWrapper(const clap_event_param_value* param)
        : type(ClapEventParam_Type_Value), paramId(param->param_id), value(param->value)
     {}
@@ -88,6 +91,7 @@ struct ServerEventWrapper
 
     Event ev;
     T data;
+    std::optional<Stamp> ts;
 };
 
 struct ClientParamWrapper

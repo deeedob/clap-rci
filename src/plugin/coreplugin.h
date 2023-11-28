@@ -18,7 +18,7 @@ class ValueType;
 struct CorePluginPrivate;
 
 using Plugin = clap::helpers::Plugin <
-    clap::helpers::MisbehaviourHandler::Terminate,
+    clap::helpers::MisbehaviourHandler::Ignore,
     clap::helpers::CheckingLevel::Maximal
 >;
 

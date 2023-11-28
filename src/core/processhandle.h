@@ -32,7 +32,7 @@ class ProcessHandle
 {
 public:
     ProcessHandle();
-    explicit ProcessHandle(const std::filesystem::path& path, const std::vector<std::string>& args = {});
+    explicit ProcessHandle(const std::filesystem::path& path, std::initializer_list<std::string> args = {});
     ~ProcessHandle();
 
     ProcessHandle(ProcessHandle &&) noexcept;

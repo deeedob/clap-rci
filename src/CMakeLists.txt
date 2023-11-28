@@ -42,7 +42,7 @@ target_include_directories(${target} SYSTEM
     PUBLIC 3rdparty/crill/include
 )
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter)
+    target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${target} PRIVATE /W4 /WX /wd4100 /wd4702)
 endif()

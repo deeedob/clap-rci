@@ -1,7 +1,7 @@
 # Generate gRPC files
 set(proto_out "${CMAKE_CURRENT_BINARY_DIR}/api/v0")
 
-add_library(proto-objects OBJECT "${clap-remote_PROTO}")
+add_library(proto-objects OBJECT "${clap-rci_PROTO}")
 target_include_directories(proto-objects PUBLIC "$<BUILD_INTERFACE:${proto_out}>")
 target_link_libraries(proto-objects PUBLIC
     protobuf::libprotobuf
@@ -11,7 +11,7 @@ target_link_libraries(proto-objects PUBLIC
 # https://github.com/protocolbuffers/protobuf/blob/main/docs/cmake_protobuf_generate.md
 protobuf_generate(
     TARGET proto-objects
-    IMPORT_DIRS "${clap-remote_PROTO_INCLUDE}"
+    IMPORT_DIRS "${clap-rci_PROTO_INCLUDE}"
     PROTOC_OUT_DIR "${proto_out}"
 )
 
@@ -20,7 +20,7 @@ protobuf_generate(
     LANGUAGE grpc
     GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
     PLUGIN "protoc-gen-grpc=\$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
-    IMPORT_DIRS ${clap-remote_PROTO_INCLUDE}
+    IMPORT_DIRS ${clap-rci_PROTO_INCLUDE}
     PROTOC_OUT_DIR ${proto_out}
 )
 

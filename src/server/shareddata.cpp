@@ -147,7 +147,7 @@ void SharedData::pollCallback(bool ok)
         return endCallback();
     }
 
-    const auto nProcessEvs = consumeEventToStream(mPluginProcessToClientsQueue); // Consume events from RT audio thread
+    const auto nProcessEvs = consumeEventToStream(mPluginProcessToClientsQueue); // Consume events from process thread
     const auto nMainEvs = consumeEventToStream(mPluginMainToClientsQueue); // Consume events from main thread
 //    SPDLOG_TRACE("{} {}, time: {}", nProcessEvs, nMainEvs, mCurrExpBackoff);
     if (nProcessEvs == 0 && nMainEvs == 0) {
@@ -157,6 +157,7 @@ void SharedData::pollCallback(bool ok)
     }
     // If we reached this point, we have events to send.
     bool success = false;
+    Timestamp ts;
     for (auto stream : streams) {       // For all streams/clients
         if (stream->sendEvents(mPluginToClientsData))     // try to pump some events.
             success = true;
@@ -207,5 +208,12 @@ uint64_t SharedData::nextExpBackoff()
 {
     mCurrExpBackoff = (mCurrExpBackoff < mExpBackoffLimitNs) ? mCurrExpBackoff * 2 : mExpBackoffLimitNs;
     return mCurrExpBackoff;
+}
+void SharedData::endStreams()
+{
+    for (auto stream : streams) {
+        if (!stream->endStream())
+            SPDLOG_ERROR("Failed to end stream {}", toTag(stream));
+    }
 }
 RCLAP_END_NAMESPACE

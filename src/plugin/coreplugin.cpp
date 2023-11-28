@@ -73,7 +73,6 @@ CorePlugin::CorePlugin(const clap_plugin_descriptor *desc, const clap_host *host
 CorePlugin::CorePlugin(const Settings &settings, const clap_plugin_descriptor *desc, const clap_host *host, std::unique_ptr<Module> rootModule)
     : Plugin(desc, host), dPtr(std::make_unique<CorePluginPrivate>(desc, std::move(rootModule)))
 {
-    // Consume the settings from the caller.
     dPtr->settings = std::make_unique<Settings>(settings);
 
     // Start global logger if not already started
@@ -190,15 +189,6 @@ void CorePlugin::processGuiEvents(const clap_output_events *ov)
     }
 }
 
-/*
- * At the core of the plugin is the process() function. It handles
- * events and audio processing together on a per-frame basis. It
- * requires realtime performance. This function:
- *   - dispatches incoming events as produced by the UI
- *   - handles all events on a per-frame basis
- *   - produces audio as needed.
- * [audio-thread & active_state & processing_state]
- */
 clap_process_status CorePlugin::process(const clap_process *process) noexcept
 {
     // Process all events from the Server
@@ -244,7 +234,6 @@ clap_process_status CorePlugin::process(const clap_process *process) noexcept
         ++frame;
     }
 
-    // Plugin To Gui Producer Done
     return retStatus;
 }
 
@@ -608,9 +597,8 @@ void CorePlugin::logInfo()
         "Log file:         {}\n"
         "Executable:       {}\n"
         "##################################################################\n";
-    const auto stime = fmt::format("{}", std::chrono::system_clock::now());
     SPDLOG_INFO(PluginInfoMsg,
-        stime,
+        fmt::format("{}", std::chrono::system_clock::now()),
         _host.host()->name, _host.host()->version,
         dPtr->settings->clapPath(),
         dPtr->desc->name, dPtr->hashCore,

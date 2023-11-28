@@ -6,7 +6,7 @@
 #include <latch>
 #include <thread>
 
-using namespace QCLAP_NAMESPACE;
+using namespace RCLAP_NAMESPACE;
 
 TEST_CASE("BlkQueue" "[Core]") {
     SECTION("Enqueue and Dequeue") {

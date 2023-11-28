@@ -5,7 +5,7 @@
 #include <thread>
 #include <string_view>
 
-using namespace QCLAP_NAMESPACE;
+using namespace RCLAP_NAMESPACE;
 
 #if defined _WIN32 || defined _WIN64
 constexpr std::string_view path = "executable.exe";

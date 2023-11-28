@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(clap-remote
+project(clap-rci
     VERSION 0.0.1
     LANGUAGES C CXX
 )
@@ -12,10 +12,10 @@ find_package(gRPC CONFIG REQUIRED)
 
 option(clap-remote_BUILD_TESTS "Build tests" OFF)
 
-set(clap-remote_PROTO "${CMAKE_CURRENT_LIST_DIR}/api/v0/api.proto" CACHE STRING "proto server api" FORCE)
-mark_as_advanced(clap-remote_PROTO)
-set(clap-remote_PROTO_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/api/v0" CACHE STRING "proto include path" FORCE)
-mark_as_advanced(clap-remote_INCLUDE)
+set(clap-rci_PROTO "${CMAKE_CURRENT_LIST_DIR}/api/v0/api.proto" CACHE STRING "proto server api" FORCE)
+set(clap-rci_PROTO_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/api/v0" CACHE STRING "proto include path" FORCE)
+mark_as_advanced(clap-rci_proto)
+mark_as_advanced(clap-rci_proto_include)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -18,7 +18,7 @@ class BlkRingQueue
 {
 public:
     BlkRingQueue() : slots(std::counting_semaphore<>::max()), items(0) {}
-    explicit BlkRingQueue(std::size_t cap) : capacity(cap), slots(cap), items(0)
+    explicit BlkRingQueue(std::size_t cap) : capacity(cap), slots(static_cast<ptrdiff_t>(cap)), items(0)
     {
         // Fast modulo mask hack. Only works for power-of-2 capacities.
         // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2

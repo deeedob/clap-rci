@@ -31,6 +31,35 @@ struct Stamp
         }
         return false;
     }
+    Stamp delta(Stamp older) {
+        int64_t deltaSec = mSeconds - older.mSeconds;
+        int64_t deltaNanos = mNanos - older.mNanos;
+        if (deltaNanos < 0) {
+            deltaSec -= 1;
+            deltaNanos += 1000000000;
+        }
+        return Stamp(deltaSec, deltaNanos);
+    }
+
+    void subtractMilliseconds(int64_t millis) {
+        int64_t secondsToSubtract = millis / 1000;
+        int64_t nanosToSubtract = (millis % 1000) * 1000000;
+
+        mSeconds -= secondsToSubtract;
+        if (mNanos < nanosToSubtract) {
+            mSeconds -= 1;
+            mNanos += 1000000000;
+        }
+        mNanos -= nanosToSubtract;
+    }
+
+    double toDouble() const {
+        return static_cast<double>(mSeconds) + static_cast<double>(mNanos) / 1e9;
+    }
+
+    [[nodiscard]] std::string fmt() const {
+        return fmt::format("{:0>10}.{:0>9}", mSeconds, mNanos);
+    }
 private:
     int64_t mSeconds = {};
     int64_t mNanos = {};

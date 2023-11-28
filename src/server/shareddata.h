@@ -19,7 +19,7 @@ using SPMRQueue = farbot::fifo<T,
     farbot::fifo_options::concurrency::multiple,                // consumer: server-thread
     farbot::fifo_options::concurrency::single,                  // producer: audio-thread
     farbot::fifo_options::full_empty_failure_mode::return_false_on_full_or_empty,
-    farbot::fifo_options::full_empty_failure_mode::overwrite_or_return_default>;
+    farbot::fifo_options::full_empty_failure_mode::return_false_on_full_or_empty>;
 template <typename T>
 using MPMRQueue = farbot::fifo<T,
     farbot::fifo_options::concurrency::multiple,
@@ -53,6 +53,8 @@ public:
     bool blockingPushClientEvent(Event e);
 
     void pushClientParam(const ClientParams &ev);
+    void endStreams();
+
 
     [[nodiscard]] std::size_t nStreams() const;
     [[nodiscard]] bool isValid() const noexcept;
@@ -87,7 +89,7 @@ private:
             std::visit([&](auto &&arg) {
                 using T = std::decay_t<decltype(arg)>;
                 next->set_event(out.ev);
-                SPDLOG_TRACE("Consumed event: {}", evToString(out.ev));
+                // SPDLOG_TRACE("Consumed event: {}", evToString(out.ev));
                 if constexpr (std::is_same_v<T, ClapEventNoteWrapper>) {
                     next->mutable_note()->set_note_id(arg.noteId);
                     next->mutable_note()->set_port_index(arg.portIndex);
@@ -126,7 +128,7 @@ private:
     CqEventHandler *mServerStreamCq = nullptr;
     std::atomic<bool> pollRunning = false;
     std::atomic<bool> pollStop = false;
-    static constexpr uint64_t mPollFreqNs = 5'000; // 5 us
+    static constexpr uint64_t mPollFreqNs = 0; // 5 us
     static constexpr uint64_t mExpBackoffLimitNs = 250'000;
     uint64_t mCurrExpBackoff = mPollFreqNs;
 

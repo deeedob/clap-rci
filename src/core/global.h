@@ -5,9 +5,9 @@
 #include <string_view>
 #include <cstring>
 
-#define QCLAP_NAMESPACE qclap
+#define RCLAP_NAMESPACE rclap
 
-# define RCLAP_BEGIN_NAMESPACE namespace QCLAP_NAMESPACE {
+# define RCLAP_BEGIN_NAMESPACE namespace RCLAP_NAMESPACE {
 # define RCLAP_END_NAMESPACE }
 
 RCLAP_BEGIN_NAMESPACE
@@ -28,7 +28,7 @@ RCLAP_BEGIN_NAMESPACE
 #   endif
 #endif
 
-// MurmurHash3 finalizer
+// MurmurHash3
 // Since (*this) is already unique in this process, all we really want to do is
 // propagate that uniqueness evenly across all the bits, so that we can use
 // a subset of the bits while reducing collisions significantly.

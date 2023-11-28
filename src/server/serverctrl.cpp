@@ -56,7 +56,7 @@ bool ServerCtrl::start()  // TODO: noexcept?
 // at any point in time.
 bool ServerCtrl::stop()
 {
-    if (!isRunning() || nPlugins() != 0)
+    if (!isRunning())
         return false;
 
     std::unique_lock lock(mServerMtx);
