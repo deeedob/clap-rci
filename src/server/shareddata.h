@@ -128,7 +128,7 @@ private:
     CqEventHandler *mServerStreamCq = nullptr;
     std::atomic<bool> pollRunning = false;
     std::atomic<bool> pollStop = false;
-    static constexpr uint64_t mPollFreqNs = 0; // 5 us
+    static constexpr uint64_t mPollFreqNs = 5'000; // 5 us
     static constexpr uint64_t mExpBackoffLimitNs = 250'000;
     uint64_t mCurrExpBackoff = mPollFreqNs;
 
