@@ -46,7 +46,8 @@ template <typename T>
 inline void *toTag(T *t) { return reinterpret_cast<void *>(t); }
 
 inline void safe_str_copy(char* dest, size_t dest_size, const char* src) {
-#if defined(__STDC_LIB_EXT1__)
+
+#if defined _WIN32 || defined _WIN64
     strcpy_s(dest, dest_size, src);
 #else
     strncpy(dest, src, dest_size - 1);

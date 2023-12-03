@@ -23,7 +23,9 @@ gRPC by adhering to the defined [API](api/v0/api.proto).
 
 </div>
 
-![clap-rci architecture](docs/clap-rci-arch.png)
+<div align="center" width="100%">
+    <img width=77% src="docs/clap-rci-arch.png" />
+</div>
 
 
 

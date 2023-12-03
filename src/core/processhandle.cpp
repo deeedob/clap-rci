@@ -373,6 +373,7 @@ std::optional<int> ProcessHandlePrivate::terminateChild()
 
 std::optional<int> ProcessHandlePrivate::unwrapStatus(int rawStatus)
 {
+#if defined __linux__ || defined __APPLE__
     // unwrap unix status
     if (WIFEXITED(rawStatus))
         rawStatus = WEXITSTATUS(rawStatus);
@@ -381,6 +382,9 @@ std::optional<int> ProcessHandlePrivate::unwrapStatus(int rawStatus)
     else
         return std::nullopt;
     return rawStatus;
+#else
+    return std::nullopt;
+#endif
 }
 
 
