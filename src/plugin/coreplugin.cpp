@@ -196,13 +196,6 @@ clap_process_status CorePlugin::process(const clap_process *process) noexcept
 
     clap_process_status retStatus = CLAP_PROCESS_SLEEP;
 
-    auto chin = process->audio_outputs->channel_count;
-    auto chout = process->audio_inputs->channel_count;
-    if (chin != chout) {
-        SPDLOG_CRITICAL("Process: channel count mismatch");
-        return retStatus;
-    }
-
     const auto *inEvs = process->in_events;
     auto nEvts = inEvs->size(inEvs);
     const clap_event_header_t *ev = nullptr;
