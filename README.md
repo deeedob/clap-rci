@@ -24,3 +24,7 @@ gRPC](https://github.com/grpc/grpc/blob/master/BUILDING.md) system/user wide.
 Refer to your platform's documentation for install instructions.
 
 The tests depend on [Catch2](https://github.com/catchorg/Catch2).
+
+## Client Implementations
+
+- [qtcleveraudioplugin](https://code.qt.io/cgit/playground/qtcleveraudioplugin.git/about/)
