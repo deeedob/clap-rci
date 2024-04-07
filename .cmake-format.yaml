@@ -1,0 +1,15 @@
+line_width: 80
+tab_size: 4
+separate_ctrl_name_with_space: False
+separate_fn_name_with_space: False
+dangle_parens: True
+autosort: True
+max_pargs_hwrap: 4
+line_ending: "unix"
+command_case: "lower"
+keyword_case: "upper"
+always_wrap:
+  - project
+enable_sort: true
+input_encoding: "utf-8"
+output_encoding: "utf-8"

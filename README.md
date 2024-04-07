@@ -1,9 +1,5 @@
 # clap-rci
 
-> This is the proof-of-concept implementation, as highlighted in my
-> [thesis](https://github.com/deeedob/thesis). It is feature incomplete, and
-> I'm currently working on a rewrite.
-
 The **Remote Control Interface (RCI)** is a plugin layer abstraction for the
 [*CLAP*](https://github.com/free-audio/clap) standard. It uses a
 high-performance gRPC server to allow clients to connect and communicate

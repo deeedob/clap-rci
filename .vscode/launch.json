@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "codelldb",
+            "request": "launch",
+            "name": "Launch Bitwig Engine",
+            "program": "/opt/bitwig-studio/bin/BitwigAudioEngine-X64-SSE41",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

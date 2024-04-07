@@ -1,7 +1,6 @@
-
 # Returns a new list @out that is appended with a newline from @list
 function(util_list_newline out list)
-    if (ARGN)
+    if(ARGN)
         util_list_newline(${out} ${ARGN})
     endif()
     set(${out} "${list}\n${${out}}" PARENT_SCOPE)
@@ -12,7 +11,7 @@ function(util_list_delimiter out delim)
     list(GET ARGV 2 temp)
     math(EXPR N "${ARGC}-1")
     # check if the list is smaller than 3
-    if (N LESS 3)
+    if(N LESS 3)
         set(${out} "${temp}" PARENT_SCOPE)
         return()
     endif()
@@ -27,6 +26,7 @@ endfunction()
 function(add_test_executable name)
     add_executable(${name} ${name}.cpp)
     target_link_libraries(${name} PRIVATE Catch2::Catch2WithMain)
+    add_sanitizers(${name})
 
     message(STATUS "Adding test executable: ${name}")
 
@@ -36,11 +36,56 @@ function(add_test_executable name)
     cmake_parse_arguments(arg "${flags}" "${args}" "${listArgs}" ${ARGN})
 
     # Optional libraries to link against (if provided)
-    if ( arg_DEPENDENCIES )
+    if(arg_DEPENDENCIES)
         target_link_libraries(${name} PUBLIC ${arg_DEPENDENCIES})
         add_dependencies(${name} ${arg_DEPENDENCIES})
-    endif ()
+    endif()
     catch_discover_tests(${name})
+endfunction()
+
+function(initialize_proto_target target api_path)
+    find_package(Protobuf CONFIG REQUIRED)
+    find_package(gRPC CONFIG REQUIRED)
+
+    cmake_path(GET api_path PARENT_PATH api_include)
+
+    set(clap-rci_PROTO ${api_path})
+    set(clap-rci_PROTO_INCLUDE ${api_include})
+    set(clap-rci_PROTO_OUT "${CMAKE_CURRENT_BINARY_DIR}/include/clap-rci/gen")
+    set(clap-rci_PROTO_OUT_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/include")
+
+    # TODO: include private
+    add_library(${target}-proto OBJECT "${clap-rci_PROTO}")
+    target_include_directories(${target}-proto PUBLIC "$<BUILD_INTERFACE:${clap-rci_PROTO_OUT_INCLUDE}>")
+    target_link_libraries(${target}-proto PUBLIC protobuf::libprotobuf gRPC::grpc++)
+
+    # https://github.com/protocolbuffers/protobuf/blob/main/docs/cmake_protobuf_generate.md
+    protobuf_generate(
+        TARGET ${target}-proto IMPORT_DIRS "${clap-rci_PROTO_INCLUDE}" PROTOC_OUT_DIR
+        "${clap-rci_PROTO_OUT}"
+    )
+
+    protobuf_generate(
+        TARGET
+        ${target}-proto
+        LANGUAGE
+        grpc
+        GENERATE_EXTENSIONS
+        .grpc.pb.h
+        .grpc.pb.cc
+        PLUGIN
+        "protoc-gen-grpc=\$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
+        IMPORT_DIRS
+        ${clap-rci_PROTO_INCLUDE}
+        PROTOC_OUT_DIR
+        ${clap-rci_PROTO_OUT}
+    )
+    set(generated_files ${clap-rci_PROTO_OUT}/api.grpc.pb.cc ${clap-rci_PROTO_OUT}/api.grpc.pb.h
+                        ${clap-rci_PROTO_OUT}/api.pb.cc ${clap-rci_PROTO_OUT}/api.pb.h
+    )
+    set_source_files_properties(${generated_files} PROPERTIES GENERATED TRUE)
+    set_property(SOURCE ${generated_files} PROPERTY SKIP_AUTOGEN ON)
+
 endfunction()
 
 function(print_target_info target_name)

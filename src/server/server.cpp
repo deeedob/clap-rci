@@ -1,94 +1,101 @@
-#include <core/logging.h>
-#include "server.h"
-#include "tags/clienteventcall.h"
-#include "tags/clientparamcall.h"
-#include "tags/servereventstream.h"
-#include <crill/progressive_backoff_wait.h>
+#include "coreservice.hpp"
+#include "hostservice.hpp"
+#include "pluginservice.hpp"
 
-RCLAP_BEGIN_NAMESPACE
+#include <clap-rci/server.h>
 
-Server::Server(std::string_view address)
-    : serverAddress(address)
+#include <grpcpp/server.h>
+#include <grpcpp/server_builder.h>
+#include <grpc/event_engine/event_engine.h>
+
+#include <absl/log/log.h>
+
+#include <mutex>
+#include <format>
+
+CLAP_RCI_BEGIN_NAMESPACE
+
+struct ServerPrivate {
+    explicit ServerPrivate() = default;
+
+    std::string address;
+    int selectedPort = -1;
+    std::unique_ptr<grpc::Server> server;
+    std::mutex serverMtx;
+
+    ClapCoreService coreService;
+    ClapPluginService pluginService;
+    ClapHostService hostService;
+
+    Server::State state = Server::State::Init;
+};
+
+Server::Server()
+    : dPtr(std::make_unique<ServerPrivate>())
 {
-    if (!Log::Private::gLoggerSetup)
-        Log::setupLogger("mServer");
 }
 
-Server::~Server()
-{
-    if (isRunning())
-        stop();
-}
+Server::~Server() = default;
 
-bool Server::start()
+bool Server::start(std::string_view addressUri)
 {
+    std::unique_lock lock(dPtr->serverMtx);
+
     // Server can be started only once
-    if (state != CREATE)
+    if (dPtr->state != Server::State::Init)
         return false;
-    state = RUNNING;
 
-    // Specify the amount of cqs and threads to use
-    cqHandlers.reserve(2);
-    threads.reserve(cqHandlers.capacity());
-    // Create the server and completion queues. Launch server
     {
         grpc::ServerBuilder builder;
-        builder.AddListeningPort(serverAddress, grpc::InsecureServerCredentials(), &mActivePort);
-        builder.RegisterService(&aservice);
+        builder.AddListeningPort(
+            addressUri.data(), grpc::InsecureServerCredentials(), &dPtr->selectedPort
+        );
+        builder.RegisterService(&dPtr->coreService);
+        builder.RegisterService(&dPtr->pluginService);
+        builder.RegisterService(&dPtr->hostService);
 
-        // Create the amount of completion queues
-        CqEventHandler temp1(this, builder.AddCompletionQueue());
-        cqHandlers.emplace_back(std::make_unique<CqEventHandler>(std::move(temp1)));
-        CqEventHandler temp2(this, builder.AddCompletionQueue());
-        cqHandlers.emplace_back(std::make_unique<CqEventHandler>(std::move(temp2)));
-        server = builder.BuildAndStart();
-        SPDLOG_INFO("Server listening on URI: {}, Port: {}", uri(), mActivePort);
+        dPtr->server = builder.BuildAndStart();
+        dPtr->address = addressUri.substr(0, addressUri.find_last_of(':'));
+        LOG(INFO) << std::format(
+            "Server listening on URI: {}, Port: {}", dPtr->address, dPtr->selectedPort
+        );
     }
-
-    // Create handlers to manage the RPCs and distribute them across
-    // the completion queues. We use the first completion queue for
-    // server-side streaming from the plugin to its client.
-    cqHandlers[PosStreamCq]->create<ServerEventStream>();
-    SPDLOG_TRACE("Server-Stream completion queue served @ {}", toTag(cqHandlers[PosStreamCq].get()));
-    cqHandlers[1]->create<ClientEventCallHandler>();
-    cqHandlers[1]->create<ClientParamCall>();
-
-    // Distribute completion queues across threads
-    threads.emplace_back(&CqEventHandler::run, cqHandlers[PosStreamCq].get());
-    threads.emplace_back(&CqEventHandler::run, cqHandlers[1].get());
-
+    dPtr->state = State::Running;
     return true;
 }
 
 bool Server::stop()
 {
-    if (!isRunning())
+    std::unique_lock lock(dPtr->serverMtx);
+
+    if (dPtr->state != State::Running)
         return false;
 
-    // Shutdown the server and all completion queues. This drains
-    // all the pending events and allows the threads to exit gracefully.
-    for (const auto & c : cqHandlers)
-        c->cancelAllPendingTags();
-    server->Shutdown();         // shutdown server
-    for (const auto &c : cqHandlers)
-        c->teardown();          // teardown the completion queues, drain all pending events
-    for (auto &c : cqHandlers) {
-         crill::progressive_backoff_wait([&c]{          // sync all threads. Wait for leftovers
-            return c->getState() == CqEventHandler::SHUTDOWN;
-        });
-    }
-
-    // Wait for all threads to exit
-    for (auto &j : threads) // commit
-        j.join();
-
-    state = FINISHED;
+    dPtr->server->Shutdown();
+    dPtr->state = State::Finished;
     return true;
 }
 
-void Server::wait(std::uint32_t ms)
+bool Server::reset()
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    std::unique_lock lock(dPtr->serverMtx);
+    if (dPtr->state != State::Finished)
+        return false;
+    dPtr->server.reset();
+    dPtr->address.clear();
+    dPtr->selectedPort = -1;
+    dPtr->state = State::Init;
+    return true;
 }
 
-RCLAP_END_NAMESPACE
+int Server::port() const noexcept
+{
+    return dPtr->selectedPort;
+}
+
+std::string_view Server::address() const noexcept
+{
+    return dPtr->address;
+}
+
+CLAP_RCI_END_NAMESPACE

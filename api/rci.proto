@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package v0.api;
+
+service ClapCore {
+    rpc GetPluginInstances(None) returns (PluginInstances) {}
+}
+
+service ClapPlugin {
+    rpc EventStream(stream ClientEventMessage) returns (stream PluginEventMessage) {}
+    rpc GetPluginState(None) returns (PluginState) {}
+}
+
+service ClapHost {
+    rpc RequestRestart(None) returns (None) {}
+    rpc RequestProcess(None) returns (None) {}
+    rpc Descriptor(None) returns (HostDescriptor) {}
+}
+
+enum PluginEvent {
+    Activate = 0;
+    Deactivate = 1;
+    StartProcessing = 2;
+    StopProcessing = 3;
+    Reset = 4;
+}
+
+enum ClientEvent {
+    RequestRestart = 0;
+    RequestProcess = 1;
+}
+
+message ClientEventMessage {
+    ClientEvent event = 1;
+}
+
+message PluginEventMessage {
+    PluginEvent event = 1;
+}
+
+message None {
+}
+
+message Id {
+    string id = 1;
+}
+
+message PluginInstances {
+    map<string, uint64> instances = 1;
+}
+
+message PluginState {
+    bool isActive = 1;
+    bool isProcessing = 2;
+}
+
+message HostDescriptor {
+    string name = 1;
+    string vendor = 2;
+    string url = 3;
+    string version = 4;
+}
+

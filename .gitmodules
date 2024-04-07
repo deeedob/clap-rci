@@ -1,18 +1,6 @@
+[submodule "src/3rdparty/clap"]
+	path = 3rdparty/clap
+	url = https://github.com/free-audio/clap
 [submodule "cmake/sanitizers-cmake"]
 	path = cmake/sanitizers-cmake
 	url = https://github.com/arsenm/sanitizers-cmake
-[submodule "src/3rdparty/clap"]
-	path = src/3rdparty/clap
-	url = https://github.com/free-audio/clap.git
-[submodule "src/3rdparty/clap-helpers"]
-	path = src/3rdparty/clap-helpers
-	url = https://github.com/free-audio/clap-helpers.git
-[submodule "src/3rdparty/spdlog"]
-	path = src/3rdparty/spdlog
-	url = https://github.com/gabime/spdlog
-[submodule "src/3rdparty/crill"]
-	path = src/3rdparty/crill
-	url = https://github.com/deeedob/crill
-[submodule "src/3rdparty/farbot"]
-	path = src/3rdparty/farbot
-	url = https://github.com/hogliux/farbot
