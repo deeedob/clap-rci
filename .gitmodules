@@ -1,6 +1,6 @@
-[submodule "src/3rdparty/clap"]
-	path = 3rdparty/clap
-	url = https://github.com/free-audio/clap
 [submodule "cmake/sanitizers-cmake"]
 	path = cmake/sanitizers-cmake
 	url = https://github.com/arsenm/sanitizers-cmake
+[submodule "3rdparty/clap"]
+	path = 3rdparty/clap
+	url = https://github.com/free-audio/clap
