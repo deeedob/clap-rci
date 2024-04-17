@@ -9,7 +9,7 @@ TEST_CASE("Registry", "[registry]")
     Server s1;
     REQUIRE(s1.start());
     REQUIRE(!s1.start());
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     REQUIRE(s1.stop());
     REQUIRE(!s1.stop());
 

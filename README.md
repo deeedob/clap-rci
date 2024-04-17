@@ -9,10 +9,6 @@ protobuf and its language-agnostic
 result, clients can be implemented in any of the supported programming
 languages by utilizing the provided [api](api/v0/api.proto).
 
-<div align="center" width="100%">
-    <img width=77% src="https://github.com/deeedob/thesis/blob/main/images/clean/clap-rci_arch.png" />
-</div>
-
 ## Prerequisite
 
 It is recommended to [install

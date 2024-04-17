@@ -1,30 +1,37 @@
-#include "coreplugin.hpp"
+#include "coreplugin_p.hpp"
 #include "server/eventstreamreactor.hpp"
 
 #include <clap-rci/registry.h>
 
 CLAP_RCI_BEGIN_NAMESPACE
 
-CorePluginPrivate::CorePluginPrivate(const clap_host* host)
+CorePluginPrivate::CorePluginPrivate(const clap_host* host, Private /* tag */)
     : mHost(host)
+{
+}
+
+std::shared_ptr<CorePluginPrivate>
+CorePluginPrivate::create(const clap_host* host)
 {
     if (!sServer.start("localhost:3000")) // TODO: rm debug
         DLOG(INFO) << "Server already running";
+    return std::make_shared<CorePluginPrivate>(host, Private());
 }
-
-CorePluginPrivate::~CorePluginPrivate() = default;
 
 void CorePluginPrivate::connect(std::unique_ptr<EventStreamReactor>&& client)
 {
     std::unique_lock<std::mutex> guard(mClientsMtx);
 
     if (mClients.empty() && sConnectedClients == 0)
-        startQueueWorker();
+        sQueueWorker.start();
 
     mClients.push_back(std::move(client));
     ++sConnectedClients;
 
-    DLOG(INFO) << "Connected client, got: " << mClients.size();
+    DLOG(INFO) << std::format(
+        "Client connected. Local: {}, Global: {}", mClients.size(),
+        sConnectedClients.load()
+    );
 }
 
 bool CorePluginPrivate::disconnect(EventStreamReactor* client)
@@ -41,25 +48,28 @@ bool CorePluginPrivate::disconnect(EventStreamReactor* client)
     mClients.erase(it);
     --sConnectedClients;
     if (mClients.empty() && sConnectedClients == 0) {
-        if (!sQueueWorker.joinable())
-            LOG(ERROR) << "queue worker not joinable!";
-        DLOG(INFO) << "request stop for queue worker";
-        sQueueWorker.request_stop();
-        sQueueWorker.join();
+        if (!sQueueWorker.stop()) {
+            LOG(ERROR) << "Failed to stop QueueWorker";
+        }
     }
 
-    DLOG(INFO) << "Disconnected client: " << client;
+    DLOG(INFO) << std::format(
+        "Client disconnected. Local: {}, Global: {}", mClients.size(),
+        sConnectedClients.load()
+    );
+
     return true;
+}
+
+void CorePluginPrivate::cancelAllClients()
+{
+    for (const auto& c : mClients)
+        c->TryCancel();
 }
 
 bool CorePluginPrivate::notifyPluginQueueReady()
 {
-    // TODO: CAS
-    if (sQueueIsReady)
-        return false;
-    sQueueIsReady = true;
-    sQueueWorkerCv.notify_one();
-    return true;
+    return sQueueWorker.tryNotify();
 }
 
 CorePluginPrivate::PluginQueue& CorePluginPrivate::pluginToClientsQueue()
@@ -72,6 +82,15 @@ CorePluginPrivate::ClientQueue& CorePluginPrivate::clientsToPluginQueue()
     return mClientsToPlugin;
 }
 
+void CorePluginPrivate::writeToClients(api::PluginEventMessage msg)
+{
+    // use a shared_pointer to control the point of destruction for @smsg; that
+    // is when all clients destroyed it after OnWriteDone.
+    const auto smsg = std::make_shared<api::PluginEventMessage>(std::move(msg));
+    for (const auto& c : mClients)
+        c->StartSharedWrite(smsg);
+}
+
 void CorePluginPrivate::hostRequestRestart()
 {
     mHost->request_restart(mHost);
@@ -82,45 +101,9 @@ void CorePluginPrivate::hostRequestProcess()
     mHost->request_process(mHost);
 }
 
-// Private
-void CorePluginPrivate::startQueueWorker()
+void CorePluginPrivate::requestTransport(bool value)
 {
-    if (sQueueWorker.joinable())
-        LOG(ERROR) << "queue worker is already running";
-
-    sQueueWorker = std::jthread([](std::stop_token stoken) {
-        DLOG(INFO) << "queue worker started!";
-        while (!stoken.stop_requested()) {
-            std::unique_lock<std::mutex> lock(sQueueWorkerMtx);
-            sQueueWorkerCv.wait(lock, stoken, [] {
-                return sQueueIsReady.load();
-            });
-            sQueueIsReady = false;
-            DLOG(INFO) << "queue thread woke up";
-
-            for (const auto& i : PluginInstances::instances()) {
-                auto* pp = getImplPtr(i.second.get());
-                api::PluginEventMessage temp;
-                // Iterate through all plugin instances and push
-                // the events to all connected clients.
-                while (pp->mPluginToClients.pop(&temp)) {
-                    // use a shared_pointer to control the point
-                    // of destruction for @msg; that is when all
-                    // clients destroyed it after OnWriteDone.
-                    const auto msg = std::make_shared<api::PluginEventMessage>(
-                        temp
-                    );
-                    for (const auto& c : pp->mClients) {
-                        c->StartSharedWrite(msg);
-                    }
-                    DLOG(INFO)
-                        << "Shared use count: " << msg.use_count() << " with "
-                        << pp->mClients.size() << " clients ";
-                }
-            }
-        }
-        DLOG(INFO) << "Thread stopped";
-    });
+    mWantsTransport = value;
 }
 
 CLAP_RCI_END_NAMESPACE

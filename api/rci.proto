@@ -1,41 +1,90 @@
 syntax = "proto3";
+option optimize_for = LITE_RUNTIME;
 
 package v0.api;
 
-service ClapCore {
+service ClapPluginService {
+    rpc EventStream(stream ClientEventMessage) returns (stream PluginEventMessage) {}
+
+    rpc GetPluginState(None) returns (PluginState) {}
     rpc GetPluginInstances(None) returns (PluginInstances) {}
 }
 
-service ClapPlugin {
-    rpc EventStream(stream ClientEventMessage) returns (stream PluginEventMessage) {}
-    rpc GetPluginState(None) returns (PluginState) {}
-}
-
-service ClapHost {
+// TODO: implement
+service ClapHostService {
     rpc RequestRestart(None) returns (None) {}
     rpc RequestProcess(None) returns (None) {}
     rpc Descriptor(None) returns (HostDescriptor) {}
 }
 
-enum PluginEvent {
-    Activate = 0;
-    Deactivate = 1;
-    StartProcessing = 2;
-    StopProcessing = 3;
-    Reset = 4;
-}
-
-enum ClientEvent {
-    RequestRestart = 0;
-    RequestProcess = 1;
-}
-
 message ClientEventMessage {
-    ClientEvent event = 1;
+    enum Type {
+        None = 0;
+        RequestRestart = 1;
+        RequestProcess = 2;
+        EnableTransportEvents = 3;
+        DisableTransportEvents = 4;
+    }
+    Type event = 1;
 }
 
 message PluginEventMessage {
-    PluginEvent event = 1;
+    enum Event {
+        None = 0;
+        Activate = 1;
+        Deactivate = 2;
+        StartProcessing = 3;
+        StopProcessing = 4;
+        Reset = 5;
+        Transport = 6;
+        Note = 7;
+        NoteExpression = 8;
+        Midi = 9;
+    }
+    oneof payload {
+        Event event = 1;
+        TransportMessage transport = 2;
+        Note note = 3;
+        NoteExpression note_expression = 4;
+        Midi midi = 5;
+    };
+}
+
+message TransportMessage {
+    uint32 flags = 1;
+    oneof payload {
+        TransportPosition position = 2;
+        TransportTempo tempo = 3;
+        TransportLoop loop = 4;
+        TransportTimeSignature time_sig = 5;
+        TransportAll transport_all = 6;
+    };
+}
+
+message TransportAll {
+    TransportPosition position = 2;
+    TransportTempo tempo = 3;
+    TransportLoop loop = 4;
+    TransportTimeSignature time_sig = 5;
+}
+
+message TransportPosition {
+    int64 beats = 1;
+    int64 seconds = 2;
+}
+message TransportTempo {
+    double value = 1;
+    double increment = 2;
+}
+message TransportLoop {
+    int64 start_beats = 1;
+    int64 end_beats = 2;
+    int64 start_seconds = 3;
+    int64 end_seconds = 4;
+}
+message TransportTimeSignature {
+    uint32 numerator = 1;
+    uint32 denominator = 2;
 }
 
 message None {
@@ -52,6 +101,7 @@ message PluginInstances {
 message PluginState {
     bool isActive = 1;
     bool isProcessing = 2;
+    bool hasTransport = 3;
 }
 
 message HostDescriptor {
@@ -61,3 +111,46 @@ message HostDescriptor {
     string version = 4;
 }
 
+message Note {
+    enum Type {
+        NoteOn = 0;
+        NoteOff = 1;
+        NoteChoke = 2;
+        NoteEnd = 3;
+        NoteExpression = 4;
+    }
+    Type type = 1;
+    int32 noteId = 2;
+    int32 portIndex = 3;
+    int32 channel = 4;
+    int32 key = 5;
+    double velocity = 6;
+}
+
+message NoteExpression {
+    enum Type {
+        Volume = 0;
+        Pan = 1;
+        Tuning = 2;
+        Vibrato = 3;
+        Expression = 4;
+        Brightness = 5;
+        Pressure = 6;
+    }
+    Type type = 1;
+    int32 noteId = 2;
+    int32 portIndex = 3;
+    int32 channel = 4;
+    int32 key = 5;
+    double value = 6;
+}
+
+message Midi {
+    enum Type {
+        Midi1 = 0;
+        MidiSysex = 1;
+        Midi2 = 2;
+    }
+    uint32 port_index = 1;
+    bytes data = 2;
+}

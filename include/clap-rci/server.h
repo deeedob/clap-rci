@@ -9,7 +9,8 @@ CLAP_RCI_BEGIN_NAMESPACE
 
 struct ServerPrivate;
 
-class Server {
+class Server
+{
 public:
     enum class State { Init = 0, Created, Running, Shutdown, Finished };
 

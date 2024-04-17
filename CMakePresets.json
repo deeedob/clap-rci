@@ -8,12 +8,13 @@
       "displayName": "Debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "WARNINGS_ARE_ERRORS": "ON",
         "clap-rci_BUILD_MAN_TESTS": "ON",
         "clap-rci_BUILD_AUTO_TESTS": "ON",
         "SANITIZE_ADDRESS": "OFF",
-        "SANITIZE_UNDEFINED": "OFF",
         "SANITIZE_MEMORY": "OFF",
+        "SANITIZE_UNDEFINED": "OFF",
         "SANITIZE_THREAD": "OFF"
       }
     },
@@ -46,7 +47,6 @@
         "CMAKE_CXX_COMPILER": "clang++"
       }
     },
-
     {
       "name": "release-gcc",
       "inherits": "release",

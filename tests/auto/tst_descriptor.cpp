@@ -69,8 +69,8 @@ TEST_CASE("Descriptor", "[construction]")
     Descriptor d7(
         "id", "name", "vendor", "url", "manual", "support", "version",
         "description",
-        {CLAP_PLUGIN_FEATURE_PITCH_SHIFTER,
-         CLAP_PLUGIN_FEATURE_PITCH_CORRECTION}
+        {CLAP_PLUGIN_FEATURE_PITCH_SHIFTER, CLAP_PLUGIN_FEATURE_PITCH_CORRECTION
+        }
     );
 
     REQUIRE(d6 == d7);

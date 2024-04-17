@@ -1,23 +1,29 @@
 #include <clap-rci/coreplugin.h>
 #include <clap-rci/descriptor.h>
-#include <clap-rci/export.h>
+#include <clap-rci/entry.h>
+#include <clap-rci/registry.h>
 
 #include <absl/log/log.h>
 
-class TestPlugin : public CorePlugin {
-    REGISTER;
+using namespace clap::rci;
 
+class TestPlugin : public CorePlugin
+{
+    REGISTER
 public:
     explicit TestPlugin(const clap_host* host)
         : CorePlugin(descriptor(), host)
     {
         DLOG(INFO) << "TestPluginOne Created";
+        assert(withNotePortInfoIn({
+            .id = 0,
+            .supported_dialects = CLAP_NOTE_DIALECT_MIDI2,
+            .preferred_dialect = CLAP_NOTE_DIALECT_MIDI2,
+            .name = "My Port Name",
+        }));
     }
 
-    ~TestPlugin() override
-    {
-        DLOG(INFO) << "TestPluginOne Destroyed";
-    }
+    ~TestPlugin() override { DLOG(INFO) << "TestPluginOne Destroyed"; }
 
     static const Descriptor* descriptor() noexcept
     {
@@ -62,6 +68,11 @@ public:
         DLOG(INFO) << "reset";
         return CorePlugin::reset();
     }
+    clap_process_status process(const clap_process* process) override
+    {
+        return CLAP_PROCESS_CONTINUE;
+    }
 
 private:
+    size_t count = 0;
 };

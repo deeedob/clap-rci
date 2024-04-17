@@ -1,17 +1,14 @@
-#include "coreservice.hpp"
-#include "hostservice.hpp"
 #include "pluginservice.hpp"
 
 #include <clap-rci/server.h>
 
+#include <grpc/event_engine/event_engine.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
-#include <grpc/event_engine/event_engine.h>
 
 #include <absl/log/log.h>
 
 #include <mutex>
-#include <format>
 
 CLAP_RCI_BEGIN_NAMESPACE
 
@@ -23,9 +20,7 @@ struct ServerPrivate {
     std::unique_ptr<grpc::Server> server;
     std::mutex serverMtx;
 
-    ClapCoreService coreService;
     ClapPluginService pluginService;
-    ClapHostService hostService;
 
     Server::State state = Server::State::Init;
 };
@@ -48,16 +43,16 @@ bool Server::start(std::string_view addressUri)
     {
         grpc::ServerBuilder builder;
         builder.AddListeningPort(
-            addressUri.data(), grpc::InsecureServerCredentials(), &dPtr->selectedPort
+            addressUri.data(), grpc::InsecureServerCredentials(),
+            &dPtr->selectedPort
         );
-        builder.RegisterService(&dPtr->coreService);
         builder.RegisterService(&dPtr->pluginService);
-        builder.RegisterService(&dPtr->hostService);
 
         dPtr->server = builder.BuildAndStart();
         dPtr->address = addressUri.substr(0, addressUri.find_last_of(':'));
         LOG(INFO) << std::format(
-            "Server listening on URI: {}, Port: {}", dPtr->address, dPtr->selectedPort
+            "Server listening on URI: {}, Port: {}", dPtr->address,
+            dPtr->selectedPort
         );
     }
     dPtr->state = State::Running;

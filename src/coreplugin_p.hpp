@@ -1,5 +1,7 @@
 #pragma once
 
+#include "queueworker.hpp"
+#include "transportwatcher.hpp"
 #include <clap-rci/coreplugin.h>
 #include <clap-rci/gen/rci.pb.h>
 #include <clap-rci/global.h>
@@ -8,57 +10,68 @@
 
 #include <absl/log/log.h>
 
-#include <condition_variable>
+#include <atomic>
 #include <list>
 #include <memory>
-#include <thread>
+#include <vector>
 
 CLAP_RCI_BEGIN_NAMESPACE
 using namespace CLAP_RCI_API_VERSION;
 
 class EventStreamReactor;
 
-class CorePluginPrivate {
+class CorePluginPrivate : public std::enable_shared_from_this<CorePluginPrivate>
+{
     using PluginQueue = MpMcQueue<api::PluginEventMessage, 256>;
     using ClientQueue = MpMcQueue<api::ClientEventMessage, 256>;
 
+    struct Private{};
 public:
-    CorePluginPrivate(const clap_host* host);
-    ~CorePluginPrivate();
+    explicit CorePluginPrivate(const clap_host* host, Private);
+    static std::shared_ptr<CorePluginPrivate> create(const clap_host *host);
 
     void connect(std::unique_ptr<EventStreamReactor>&& client);
     bool disconnect(EventStreamReactor* client);
+    void cancelAllClients();
 
     static bool notifyPluginQueueReady();
     PluginQueue& pluginToClientsQueue();
     ClientQueue& clientsToPluginQueue();
+    void writeToClients(api::PluginEventMessage msg);
 
     void hostRequestRestart();
     void hostRequestProcess();
-
-private:
-    static void startQueueWorker();
+    void requestTransport(bool value);
 
 private:
     inline static Server sServer;
-    inline static std::jthread sQueueWorker;
-    inline static std::mutex sQueueWorkerMtx;
-    inline static std::condition_variable_any sQueueWorkerCv;
-    inline static std::atomic<bool> sQueueIsReady {false};
+    inline static QueueWorker sQueueWorker;
     inline static std::atomic<size_t> sConnectedClients = 0;
 
+    const clap_host* mHost = nullptr;
     std::list<std::unique_ptr<EventStreamReactor>> mClients;
     std::mutex mClientsMtx;
 
     PluginQueue mPluginToClients;
     ClientQueue mClientsToPlugin;
 
-    const clap_host* mHost = nullptr;
+    TransportWatcher mTransportWatcher;
+    std::atomic<bool> mWantsTransport = true;
+
+    std::vector<clap_note_port_info> mNotePortInfosIn;
+    std::vector<clap_note_port_info> mNotePortInfosOut;
+
+    friend class CorePlugin;
 };
 
-inline CorePluginPrivate* getImplPtr(const CorePlugin* plugin)
+inline std::shared_ptr<CorePluginPrivate> getPimpl(const CorePlugin* plugin)
 {
-    return plugin->dPtr.get();
+    return plugin->dPtr;
+}
+
+inline const std::shared_ptr<CorePluginPrivate>& getPimplRef(const CorePlugin* plugin)
+{
+    return plugin->dPtr;
 }
 
 CLAP_RCI_END_NAMESPACE

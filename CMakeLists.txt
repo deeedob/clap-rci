@@ -34,20 +34,23 @@ add_library(
     clap-rci STATIC
     include/clap-rci/coreplugin.h
     include/clap-rci/descriptor.h
-    include/clap-rci/export.h
     include/clap-rci/global.h
     include/clap-rci/mpmcqueue.h
     include/clap-rci/registry.h
     include/clap-rci/server.h
+    include/clap-rci/entry.h
     src/coreplugin.cpp
-    src/coreplugin.hpp
+    src/coreplugin_p.hpp
     src/coreplugin_p.cpp
     src/descriptor.cpp
+    src/queueworker.hpp
+    src/queueworker.cpp
     src/registry.cpp
-    src/server/coreservice.hpp
+    src/transportwatcher.hpp
+    src/transportwatcher.cpp
     src/server/eventstreamreactor.hpp
-    src/server/hostservice.hpp
     src/server/pluginservice.hpp
+    src/server/pluginservice.cpp
     src/server/server.cpp
 )
 

@@ -12,7 +12,8 @@
 
 CLAP_RCI_BEGIN_NAMESPACE
 
-class Descriptor {
+class Descriptor
+{
     Descriptor();
 
 public:
@@ -61,13 +62,6 @@ public:
     Descriptor& withFeature(std::string_view features);
     Descriptor& withFeatures(std::initializer_list<std::string> features);
 
-    friend bool
-    operator==(const Descriptor& lhs, const clap_plugin_descriptor& rhs);
-    friend bool
-    operator!=(const Descriptor& lhs, const clap_plugin_descriptor& rhs);
-    friend bool operator==(const Descriptor& lhs, const Descriptor& rhs);
-    friend bool operator!=(const Descriptor& lhs, const Descriptor& rhs);
-
 private:
     std::string mId;
     std::string mName;
@@ -80,6 +74,13 @@ private:
     std::vector<std::string> mFeatures;
     std::vector<const char*> mBridge;
     clap_plugin_descriptor mDescriptor = {};
+
+    friend bool
+    operator==(const Descriptor& lhs, const clap_plugin_descriptor& rhs);
+    friend bool
+    operator!=(const Descriptor& lhs, const clap_plugin_descriptor& rhs);
+    friend bool operator==(const Descriptor& lhs, const Descriptor& rhs);
+    friend bool operator!=(const Descriptor& lhs, const Descriptor& rhs);
 };
 
 inline Descriptor::operator const clap_plugin_descriptor&() const noexcept

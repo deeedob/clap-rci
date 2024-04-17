@@ -1,9 +1,9 @@
 line_width: 80
 tab_size: 4
-separate_ctrl_name_with_space: False
-separate_fn_name_with_space: False
-dangle_parens: True
-autosort: True
+separate_ctrl_name_with_space: false
+separate_fn_name_with_space: false
+dangle_parens: true
+autosort: false
 max_pargs_hwrap: 4
 line_ending: "unix"
 command_case: "lower"

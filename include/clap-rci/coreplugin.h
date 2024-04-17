@@ -15,7 +15,8 @@ using namespace CLAP_RCI_API_VERSION;
 class Registry;
 class CorePluginPrivate;
 
-class CorePlugin {
+class CorePlugin
+{
 public:
     explicit CorePlugin(const Descriptor* descriptor, const clap_host* host);
     virtual ~CorePlugin();
@@ -23,8 +24,8 @@ public:
     CorePlugin(const CorePlugin&) = delete;
     CorePlugin& operator=(const CorePlugin&) = delete;
 
-    CorePlugin(CorePlugin&&) = default;
-    CorePlugin& operator=(CorePlugin&&) = default;
+    CorePlugin(CorePlugin&&) = delete;
+    CorePlugin& operator=(CorePlugin&&) = delete;
 
     void hostRequestRestart();
     void hostRequestProcess();
@@ -36,22 +37,33 @@ public:
     virtual bool startProcessing();
     virtual void stopProcessing();
     virtual void reset();
-    virtual clap_process_status process(const clap_process_t* process);
+    virtual clap_process_status process(const clap_process* process);
+    void withWantsTransport(bool value);
+    bool wantsTransport() const noexcept;
+
+    virtual bool isExtNotePortsEnabled() const noexcept { return true; }
+    bool withNotePortInfoIn(clap_note_port_info in);
+    bool withNotePortInfoOut(clap_note_port_info out);
 
     bool pushEvent(const api::PluginEventMessage& event);
 
-    [[nodiscard]] uint64_t idHash() const noexcept;
+    [[nodiscard]] uint64_t pluginId() const noexcept;
     [[nodiscard]] bool isActive() const noexcept;
     [[nodiscard]] bool isProcessing() const noexcept;
     [[nodiscard]] double sampleRate() const noexcept;
     [[nodiscard]] uint32_t minFramesCount() const noexcept;
     [[nodiscard]] uint32_t maxFramesCount() const noexcept;
 
-private:
-    const Descriptor* mDescriptor = nullptr;
+    const clap_plugin* clapPlugin() const noexcept;
+
+protected:
     clap_plugin mPlugin = {};
 
-    uint64_t mIdHash = 0;
+private:
+    uint64_t mPluginId = 0;
+    const Descriptor* mDescriptor = nullptr;
+    clap_plugin_note_ports mPluginNotePorts = {};
+
     bool mIsActive = false;
     bool mIsProcessing = false;
     double mSampleRate = 0;
@@ -59,9 +71,11 @@ private:
     uint32_t mMaxFramesCount = 0;
 
 private:
-    std::unique_ptr<CorePluginPrivate> dPtr;
-    friend CorePluginPrivate* getImplPtr(const CorePlugin* plugin);
-    friend Registry;
+    std::shared_ptr<CorePluginPrivate> dPtr;
+    friend std::shared_ptr<CorePluginPrivate> getPimpl(const CorePlugin* plugin
+    );
+    friend const std::shared_ptr<CorePluginPrivate>&
+    getPimplRef(const CorePlugin* plugin);
 };
 
 CLAP_RCI_END_NAMESPACE

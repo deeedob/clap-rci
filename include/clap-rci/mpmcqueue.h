@@ -7,7 +7,8 @@ CLAP_RCI_BEGIN_NAMESPACE
 
 template <typename T, size_t Size>
     requires(Size >= 2 && (Size & (Size - 1)) == 0)
-class MpMcQueue {
+class MpMcQueue
+{
 
 public:
     MpMcQueue()
@@ -23,7 +24,6 @@ public:
     MpMcQueue(MpMcQueue&&) = default;
     MpMcQueue& operator=(MpMcQueue&&) = default;
 
-    // TODO: this is not thread safe!
     bool push(const T& data)
     {
         if (!tryPush(data)) {
@@ -49,11 +49,9 @@ public:
                         pos, pos + 1, std::memory_order_relaxed
                     ))
                     break;
-            }
-            else if (dif < 0) { // Queue is full
+            } else if (dif < 0) { // Queue is full
                 return false;
-            }
-            else {
+            } else {
                 pos = mHead.load(std::memory_order_relaxed);
             }
         }
@@ -76,11 +74,9 @@ public:
                         pos, pos + 1, std::memory_order_relaxed
                     ))
                     break;
-            }
-            else if (dif < 0) { // Queue is empty
+            } else if (dif < 0) { // Queue is empty
                 return false;
-            }
-            else { // Retry from current position
+            } else { // Retry from current position
                 pos = mTail.load(std::memory_order_relaxed);
             }
         }
@@ -91,15 +87,9 @@ public:
         return true;
     }
 
-    size_t size() const
-    {
-        return mHead.load() - mTail.load();
-    }
+    size_t size() const { return mHead.load() - mTail.load(); }
 
-    bool isEmpty() const
-    {
-        return size() <= 0;
-    }
+    bool isEmpty() const { return size() <= 0; }
 
 private:
     struct Cell {
